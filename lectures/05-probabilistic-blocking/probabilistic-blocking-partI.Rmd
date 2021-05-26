@@ -30,6 +30,8 @@ Load R packages
 library(RecordLinkage)
 library(blink)
 library(knitr)
+library(cora)
+library(ggplot2)
 ```
 
 Data Cleaning Pipeline
@@ -135,16 +137,20 @@ kable(records)
 3. What do you learn from this exercise? 
 
 # Your turn solution
+
+**Do this on your own and compare with a partner.**
+
+# Your turn solution
 \vfill
 1. The $2$-shingles for the first record are $\{\text{mi, ic, ch, ha, ae, el, lv, vo, og, ge, el}\}$ and for the second are $\{\text{mi, ic, ch, ha, ae, el, lm, me, ey, ye, er}\}$
 \vfill
 2. There are 6 items in common $\{\text{mi, ic, ch, ha, ae, el}\}$ and 15 items total $\{\text{mi, ic, ch, ha, ae, el, lv, vo, og, ge, lm, me, ey, ye, er}\}$, so the Jaccard similarity is $\frac{6}{15} = \frac{2}{5} = `r 6/15`$
 \vfill
-3. You should have learned that this is very tedious to do by hand! 
+3. You should have learned that this is very tedious to do by hand!
 
 # Useful packages/functions in `R`
 
-We don't want to do this by hand! 
+From the exercise, you should have learned that we don't want to do this by hand!
 
 Here are some useful packages in `R` that can help us!
 
@@ -154,6 +160,8 @@ Here are some useful packages in `R` that can help us!
 library(textreuse) # text reuse/document similarity
 library(tokenizers) # shingles
 ```
+
+
 
 # Shingling
 
@@ -169,16 +177,22 @@ tokenize_character_shingles(x, n)
 jaccard_similarity(a, b) 
 ```
 
+# Your turn (solution)
+
+
+```{r}
+# create shingles for both names
+token.1 <- 
+  tokenize_character_shingles("MICHAELVOGEL", n=2)
+token.2 <- 
+  tokenize_character_shingles("MICHAELMEYER", n=2)
+# compute jaccard similarity 
+jaccard_similarity(unlist(token.1),unlist(token.2))
+```
+
 # Citation Data Set
 
-Research paper headers and citations, with information on authors, title, institutions, venue, date, page numbers and several other fields
-
-```{r load-ex-data, echo=TRUE, message=FALSE, warning=FALSE}
-library(devtools)
-install_github("resteorts/cora")
-library(cora)
-library(ggplot2)
-```
+Research paper headers and citations, with information on authors, title, institutions, venue, date, page numbers and several other fields.
 
 # Citation Data Set
 
@@ -197,17 +211,39 @@ Using the `title`, `authors`, and `journal` fields in the `cora` dataset,
 2. Obtain the Jaccard similarity between each pair of records (**hint:** use `jaccard_similarity`)
 \vfill
 
-# Your turn (solution)
+# Your turn (partial solution)
+\small
+```{r your-turn-sol-0, echo=TRUE, cache=TRUE}
+# get only the columns we want 
+# number of records 
+n <- nrow(cora)  
+# create id column 
+dat <- data.frame(id = seq_len(n))  
+# get columns we want 
+dat <- cbind(dat, cora[, c("title", "authors", "journal")]) 
+```
+
+# Your turn (partial solution)
+
+**Finish the rest of the exercise with a partner, which can be found after the summar**
+
+
+# Summary
+
+For a data set of size $n$, the number of comparisons we must compute is $$\frac{n(n-1)}{2}.$$
+
+\vfill
+For our set of records, we needed to compute $`r scales::comma(nrow(dat)*(nrow(dat) - 1)/2)`$ comparisons
+\vfill
+For very large data sets, we need something faster (where we filter out records that are not similar).
+\vfill
+A better approach for data sets of any realistic size is to use *hashing*, which we will look at next time. 
+\vfill
+
+# Your turn (Full solution)
+
 \small
 ```{r your-turn-sol-1, echo=TRUE, cache=TRUE}
-# get only the columns we want
-# number of records
-n <- nrow(cora) 
-# create id column
-dat <- data.frame(id = seq_len(n)) 
-# get columns we want
-dat <- cbind(dat, cora[, c("title", "authors", "journal")])
-
 # 1. paste the columns together and tokenize for each record
 shingles <- apply(dat, 1, function(x) {
   # tokenize strings
@@ -215,7 +251,7 @@ shingles <- apply(dat, 1, function(x) {
 })
 ```
 
-# Your turn (solution)
+# Your turn (Full solution)
 
 \small
 ```{r your-turn-sol-2, echo=TRUE, cache=TRUE}
@@ -223,10 +259,8 @@ shingles <- apply(dat, 1, function(x) {
 # empty holder for similarities
 jaccard <- expand.grid(record1 = seq_len(n), 
                        record2 = seq_len(n))
-
 # don't need to compare the same things twice
 jaccard <- jaccard[jaccard$record1 < jaccard$record2,]
-
 time <- Sys.time() # for timing comparison
 jaccard$similarity <- apply(jaccard, 1, function(pair) {
   # get jaccard for each pair
@@ -263,18 +297,6 @@ ggplot(jaccard) +
   xlab("Record id") + ylab("Record id") +
   theme(plot.margin = margin(5,.8,5,.8, "cm"))
 ```
-
-# Summary
-
-For a data set of size $n$, the number of comparisons we must compute is $$\frac{n(n-1)}{2}.$$
-
-\vfill
-For our set of records, we needed to compute $`r scales::comma(nrow(dat)*(nrow(dat) - 1)/2)`$ comparisons
-\vfill
-For very large data sets, we need something faster (where we filter out records that are not similar).
-\vfill
-A better approach for data sets of any realistic size is to use *hashing*, which we will look at next time. 
-\vfill
 
 
 
